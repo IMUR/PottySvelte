@@ -10,7 +10,7 @@
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "bundler",
-    "types": ["svelte"]
+    "types": ["svelte", "./src/types/geoapify"]
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"],
   "exclude": ["node_modules", "__sapper__"]

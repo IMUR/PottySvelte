@@ -10,3 +10,10 @@
     margin: auto;
   }
 </style>
+
+<script>
+  import '../global.css';
+</script>
+
+<slot />
+

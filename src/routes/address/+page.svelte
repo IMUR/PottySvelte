@@ -1,22 +1,46 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabaseClient';
-  import GeocoderAutocomplete from '@geoapify/geocoder-autocomplete';
+  import L from 'leaflet';
 
   let address: string = '';
   let coordinates: { lat: number, lon: number } | null = null;
+  let map: L.Map;
+  let marker: L.Marker;
 
   onMount(async () => {
-    const { default: { default: GeocoderA }plete } = await import('@geoapify/geocoder-autocomplete');
+    const GeocoderAutocompleteModule = await import('@geoapify/geocoder-autocomplete');
+    const GeocoderAutocomplete = GeocoderAutocompleteModule.default;
+
     const inputElement = document.getElementById("address-input") as HTMLInputElement;
-    const autocomplete = new GeocoderAutoclement, import.meta.env.VITE_GEOAPIFY_API_KEY);
-    
+    const autocomplete = new GeocoderAutocomplete(inputElement, import.meta.env.VITE_GEOAPIFY_API_KEY, {
+      /* Optionally customize the options here */
+    });
+
     autocomplete.on('select', (location: any) => {
       address = location.properties.formatted;
       coordinates = { lat: location.properties.lat, lon: location.properties.lon };
+      updateMap(coordinates);
       console.log('Selected location:', address, coordinates);
     });
+
+    initMap();
   });
+
+  const initMap = () => {
+    map = L.map('map').setView([0, 0], 2);
+
+    L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-liberty/{z}/{x}/{y}.png?apiKey=${import.meta.env.VITE_GEOAPIFY_API_KEY}`, {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    marker = L.marker([0, 0]).addTo(map);
+  };
+
+  const updateMap = (coordinates: { lat: number, lon: number }) => {
+    map.setView([coordinates.lat, coordinates.lon], 13);
+    marker.setLatLng([coordinates.lat, coordinates.lon]);
+  };
 
   const geocodeAddress = async () => {
     const apiKey = import.meta.env.VITE_GEOAPIFY_API_KEY;
@@ -25,6 +49,7 @@
     if (data.features && data.features.length > 0) {
       const [lon, lat] = data.features[0].geometry.coordinates;
       coordinates = { lat, lon };
+      updateMap(coordinates);
     }
   };
 
@@ -36,16 +61,17 @@
   };
 </script>
 
-<main>
-  <h1>Address Input Test</h1>
-  <div>
-    <label for="address-input">Address:</label>
-    <input id="address-input" bind:value={address} />
+<main class="p-4 max-w-4xl mx-auto animate-fadeIn">
+  <h1 class="text-2xl font-bold mb-4">Address Input Test</h1>
+  <div class="mb-4">
+    <label for="address-input" class="block text-sm font-medium text-gray-700">Address:</label>
+    <input id="address-input" class="mt-1 p-2 border border-gray-300 rounded-md shadow-sm w-full" bind:value={address} />
   </div>
-  <button on:click={handleSubmit}>Submit</button>
+  <button on:click={handleSubmit} class="px-4 py-2 bg-blue-600 text-white rounded-md">Submit</button>
   {#if coordinates}
-    <p>Coordinates: {coordinates.lat}, {coordinates.lon}</p>
+    <p class="mt-4">Coordinates: {coordinates.lat}, {coordinates.lon}</p>
   {/if}
+  <div id="map" class="mt-4" style="height: 400px;"></div>
 </main>
 
 <style>
@@ -72,9 +98,13 @@
     color: white;
     border: none;
     border-radius: 4px;
-    cursor: pointer
+    cursor: pointer;
   }
   button:hover {
-    background-color: #0056b3
+    background-color: #0056b3;
+  }
+  #map {
+    height: 400px;
+    width: 100%;
   }
 </style>
